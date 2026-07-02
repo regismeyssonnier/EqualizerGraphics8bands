@@ -30,7 +30,7 @@ fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR))
 pygame.display.set_caption("Equalizer 8 bands")
 horloge = pygame.time.Clock()
 
-eq = EqualizerAudio('next.mp3')
+eq = EqualizerAudio('fast.mp3')
 eq.start_playback()
 
 equalizer8Bands = Equalizer8Bands(fenetre, 100, 100, eq)

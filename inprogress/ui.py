@@ -2,11 +2,15 @@ import pygame
 import sys
 import numpy as np
 import random
+import os
+
+from eq import *
 
 #Color
 COLOR_RED = (255, 0, 0)
 COLOR_BLV = (0, 100, 150)
 COLOR_OUTPUTBASE = (100, 100, 100)
+COLOR_BUTTON = (150, 120, 0)
 
 class SliderV:
 
@@ -132,6 +136,48 @@ class OutputEqualizer:
             pygame.draw.rect(self.window, color, (self.x, self.y+self.h//2-heightvalue, self.w, heightvalue))
 
 
+class Button:
+
+    def __init__(self, window, parentX, parentY, width=150, height=50, name = "sliderV", value="button"):
+        self.window = window
+        self.name = name
+        self.margin = 10
+        self.x = parentX + self.margin
+        self.y = parentY + self.margin
+        self.startX = self.x
+        self.startY = self.y
+        self.w = width
+        self.h = height
+        self.value = value
+
+
+    def is_on_butt(self, mouse_x, mouse_y):
+        """Vérifie si les coordonnées de la souris sont sur le carré"""
+        return (self.x <= mouse_x <= self.x + self.w and
+                self.y <= mouse_y <= self.y + self.h)
+
+    def draw(self):
+
+        pygame.draw.rect(self.window, COLOR_BUTTON, (self.x, self.y, self.w, self.h))
+        self.display_text(self.value, self.x + self.w//2 - len(self.value)*5, self.y + self.h//2 - 7)
+
+    def display_text(self, texte, x, y, taille=20, couleur=(255,255,255), police=None):
+        """Affiche du texte sur une surface"""
+        font = pygame.font.Font(police, taille) if police else pygame.font.Font(None, taille)
+        texte_surface = font.render(texte, True, couleur)
+        self.window.blit(texte_surface, (x, y))
+        return texte_surface.get_rect(topleft=(x, y))
+
+    def Event(self, event, object_event):
+        
+        # Détection du relâchement (mousebuttonup)
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:  # Bouton gauche
+                souris_x, souris_y = event.pos
+                if self.is_on_butt(souris_x, souris_y):
+                    if object_event is not None:
+                        object_event.on_click()
+
 class Equalizer8Bands:
 
     def __init__(self, window, baseX, baseY, equalizer):
@@ -140,6 +186,137 @@ class Equalizer8Bands:
         self.equalizer = equalizer
         self.baseX = baseX
         self.baseY = baseY
+
+        self.width_button_player = 75
+        self.margin_button_player = 10
+        self.back = Button(window, baseX-90, baseY-75, width=self.width_button_player, height=20, name="ButtonBack", value="<<")
+        self.play = Button(window, baseX-90+self.width_button_player+self.margin_button_player, baseY-75, width=self.width_button_player, height=20, name="ButtonPlay", value="Play")
+        self.pause = Button(window, baseX-90+self.width_button_player*2+self.margin_button_player*2, baseY-75, width=self.width_button_player, height=20, name="ButtonPause", value="Pause")
+        self.stop = Button(window, baseX-90+self.width_button_player*3+self.margin_button_player*3, baseY-75, width=self.width_button_player, height=20, name="ButtonStop", value="Stop")
+        self.next = Button(window, baseX-90+self.width_button_player*4+self.margin_button_player*4, baseY-75, width=self.width_button_player, height=20, name="ButtonNext", value=">>")
+
+        
+        self.sliderV = []
+        self.sliderV.append(SliderV(window, baseX, baseY, "slider62"))
+        self.sliderV.append(SliderV(window, baseX+50, baseY, "slider125"))
+        self.sliderV.append(SliderV(window, baseX+100, baseY, "slider250"))
+        self.sliderV.append(SliderV(window, baseX+150, baseY, "slider500"))
+        self.sliderV.append(SliderV(window, baseX+200, baseY, "slider1k"))
+        self.sliderV.append(SliderV(window, baseX+250, baseY, "slider2k"))
+        self.sliderV.append(SliderV(window, baseX+300, baseY, "slider4k"))
+        self.sliderV.append(SliderV(window, baseX+350, baseY, "slider8k"))
+
+
+        self.index_player = 0
+
+        audio_files = []
+        for f in os.listdir('.'):
+            if f.endswith(('.wav', '.WAV', '.mp3', '.MP3', '.flac', '.FLAC', '.m4a', '.M4A')):
+                audio_files.append(f)
+        self.audio_playname = audio_files[self.index_player]
+
+
+        class EventButtonBack:
+
+            def __init__(self, button, equalizer, parent):
+                self.button = button
+                self.equalizer = equalizer
+                self.parent = parent
+
+            def on_click(self):
+
+                if self.equalizer.running:
+                    self.equalizer.stop_playback()
+   
+                audio_files = []
+                for f in os.listdir('.'):
+                    if f.endswith(('.wav', '.WAV', '.mp3', '.MP3', '.flac', '.FLAC', '.m4a', '.M4A')):
+                        audio_files.append(f)
+
+                self.parent.index_player = (self.parent.index_player - 1 + len(audio_files)) % len(audio_files)
+                self.parent.audio_playname = audio_files[self.parent.index_player]
+                #self.equalizer.reset(audio_files[self.parent.index_player])
+                #self.equalizer.start_playback()
+         
+        self.buttonBackEvent = EventButtonBack(self.back, equalizer, self)
+
+        class EventButtonNext:
+
+            def __init__(self, button, equalizer, parent):
+                self.button = button
+                self.equalizer = equalizer
+                self.parent = parent
+
+            def on_click(self):
+
+                if self.equalizer.running:
+                    self.equalizer.stop_playback()
+
+                audio_files = []
+                for f in os.listdir('.'):
+                    if f.endswith(('.wav', '.WAV', '.mp3', '.MP3', '.flac', '.FLAC', '.m4a', '.M4A')):
+                        audio_files.append(f)
+
+                self.parent.index_player = (self.parent.index_player + 1) % len(audio_files)
+                self.parent.audio_playname = audio_files[self.parent.index_player]
+                #self.equalizer.reset(audio_files[self.parent.index_player])
+                #self.equalizer.start_playback()
+         
+        self.buttonNextEvent = EventButtonNext(self.next, equalizer, self)
+
+        class EventButtonPlay:
+
+            def __init__(self, button, equalizer, parent):
+                self.button = button
+                self.equalizer = equalizer
+                self.parent = parent
+
+            def on_click(self):
+   
+                if not self.equalizer.running:
+                    audio_files = []
+                    for f in os.listdir('.'):
+                        if f.endswith(('.wav', '.WAV', '.mp3', '.MP3', '.flac', '.FLAC', '.m4a', '.M4A')):
+                            audio_files.append(f)
+
+                    self.equalizer.reset(audio_files[self.parent.index_player])
+                    self.equalizer.start_playback()
+
+                    #for idx, slv in enumerate(self.parent.sliderV):
+                    #    self.equalizer.set_gain(idx, slv.value)
+
+                    #self.equalizer.volume = -self.parent.sliderSound.value / 100.0
+                    #print(self.equalizer.volume)
+
+                else:
+                    self.equalizer.paused = False
+
+        self.buttonPlayEvent = EventButtonPlay(self.play, equalizer, self)
+
+        class EventButtonPause:
+
+            def __init__(self, button, equalizer):
+                self.button = button
+                self.equalizer = equalizer
+
+            def on_click(self):
+                if self.equalizer.running:
+                    self.equalizer.paused = True
+
+        self.buttonPauseEvent = EventButtonPause(self.pause, equalizer)
+
+        class EventButtonStop:
+
+            def __init__(self, button, equalizer):
+                self.button = button
+                self.equalizer = equalizer
+
+            def on_click(self):
+                if self.equalizer.running:
+                    self.equalizer.stop_playback()
+
+        self.buttonStopEvent = EventButtonStop(self.stop, equalizer)
+
 
         self.sliderSound = SliderV(window, baseX-90, baseY, "sliderSound", 0, 100)
 
@@ -152,19 +329,11 @@ class Equalizer8Bands:
             def on_move(self):
                 print(self.sliderV.name, -self.sliderV.value)
                 self.equalizer.volume = -self.sliderV.value / 100.0
+                #print(self.equalizer.volume)
 
         self.sliderSoundEvent = Event_SliderSound(self.sliderSound, self.equalizer)
                         
-        self.sliderV = []
-        self.sliderV.append(SliderV(window, baseX, baseY, "slider62"))
-        self.sliderV.append(SliderV(window, baseX+50, baseY, "slider125"))
-        self.sliderV.append(SliderV(window, baseX+100, baseY, "slider250"))
-        self.sliderV.append(SliderV(window, baseX+150, baseY, "slider500"))
-        self.sliderV.append(SliderV(window, baseX+200, baseY, "slider1k"))
-        self.sliderV.append(SliderV(window, baseX+250, baseY, "slider2k"))
-        self.sliderV.append(SliderV(window, baseX+300, baseY, "slider4k"))
-        self.sliderV.append(SliderV(window, baseX+350, baseY, "slider8k"))
-
+        
                      
 
         self.baseYoutputEq = 250 
@@ -213,6 +382,13 @@ class Equalizer8Bands:
         return texte_surface.get_rect(topleft=(x, y))
 
     def draw(self):
+
+        self.back.draw()
+        self.play.draw()
+        self.pause.draw()
+        self.stop.draw()
+        self.next.draw()
+
         for sl in self.sliderV:
             sl.draw()
 
@@ -222,6 +398,8 @@ class Equalizer8Bands:
             oe.draw()
 
         self.sliderSound.draw()
+            
+        self.display_text('Play now ' + self.audio_playname, self.baseX-90, self.baseY-90)
 
         self.display_text(str(-int(self.sliderSound.value)), self.baseX-90, self.baseY-20)
         self.display_text('Sound', self.baseX-90, self.baseY+self.sliderV[0].h+20)
@@ -249,3 +427,9 @@ class Equalizer8Bands:
             sl.Event(event, self.sliderEvent[ix])
 
         self.sliderSound.Event(event, self.sliderSoundEvent)
+
+        self.back.Event(event, self.buttonBackEvent)
+        self.play.Event(event, self.buttonPlayEvent)
+        self.pause.Event(event, self.buttonPauseEvent)
+        self.stop.Event(event, self.buttonStopEvent)
+        self.next.Event(event, self.buttonNextEvent)
