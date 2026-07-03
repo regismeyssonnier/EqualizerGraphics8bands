@@ -5,6 +5,7 @@ import random
 import os
 
 from eq import *
+from manager import *
 
 #Color
 COLOR_RED = (255, 0, 0)
@@ -35,7 +36,7 @@ class SliderV:
         self.butt_offset_x = 0
         self.butt_offset_y = self.startY + self.h // 2
         self.window = window
-        self.value = (self.valMax - self.valMin) // 2
+        self.value = (self.valMax + self.valMin) // 2 - self.valMin
                 
     
     def is_on_butt(self, mouse_x, mouse_y):
@@ -50,7 +51,24 @@ class SliderV:
         pygame.draw.rect(self.window, COLOR_RED, (self.x_butt, self.y_butt, self.butt_w, self.butt_h))
 
         
-
+    def set_value(self, v):
+        """
+        Définit la valeur du slider et met à jour la position du bouton
+        
+        Args:
+            v: Nouvelle valeur (doit être entre valMin et valMax)
+        """
+        # Clipper la valeur entre les limites
+        self.value = np.clip(v, self.valMin, self.valMax)
+        
+        # Calculer la position du bouton (inversé car y augmente vers le bas)
+        # Quand value = valMin -> bouton en bas (startY + h)
+        # Quand value = valMax -> bouton en haut (startY)
+        ratio = (self.value - self.valMin) / (self.valMax - self.valMin)
+        self.y_butt = self.startY + self.h - (ratio * self.h)
+        
+        # S'assurer que le bouton reste dans les limites
+        self.y_butt = np.clip(self.y_butt, self.startY, self.startY + self.h)
 
     def Event(self, event, object_event):
 
@@ -76,7 +94,7 @@ class SliderV:
             if self.butt_pushed:
                 souris_x, souris_y = event.pos
                 self.y_butt = np.clip(souris_y - self.butt_offset_y, self.startY, self.startY + self.h)
-                self.value = -np.clip((self.y_butt - self.startY) / self.h * (self.valMax - self.valMin) + self.valMin, self.valMin, self.valMax)
+                self.value = np.clip((1.0 - ((self.y_butt - self.startY) / self.h)) * (self.valMax - self.valMin) + self.valMin, self.valMin, self.valMax)
 
                 if object_event is not None:
                     object_event.on_move()
@@ -180,7 +198,7 @@ class Button:
 
 class Equalizer8Bands:
 
-    def __init__(self, window, baseX, baseY, equalizer):
+    def __init__(self, window, baseX, baseY, equalizer, manager=None):
 
         self.window = window
         self.equalizer = equalizer
@@ -194,6 +212,7 @@ class Equalizer8Bands:
         self.pause = Button(window, baseX-90+self.width_button_player*2+self.margin_button_player*2, baseY-75, width=self.width_button_player, height=20, name="ButtonPause", value="Pause")
         self.stop = Button(window, baseX-90+self.width_button_player*3+self.margin_button_player*3, baseY-75, width=self.width_button_player, height=20, name="ButtonStop", value="Stop")
         self.next = Button(window, baseX-90+self.width_button_player*4+self.margin_button_player*4, baseY-75, width=self.width_button_player, height=20, name="ButtonNext", value=">>")
+        self.reset = Button(window, baseX-90+self.width_button_player*5+self.margin_button_player*5, baseY-75, width=self.width_button_player, height=20, name="ButtonReset", value="Reset")
 
         
         self.sliderV = []
@@ -206,13 +225,19 @@ class Equalizer8Bands:
         self.sliderV.append(SliderV(window, baseX+300, baseY, "slider4k"))
         self.sliderV.append(SliderV(window, baseX+350, baseY, "slider8k"))
 
-
+        self.path_music = '.'
         self.index_player = 0
+        if manager is not None:
+            self.path_music = manager.folder_music
+            self.index_player = manager.index_player
+
+        
 
         audio_files = []
-        for f in os.listdir('.'):
+        for f in os.listdir(self.path_music):
             if f.endswith(('.wav', '.WAV', '.mp3', '.MP3', '.flac', '.FLAC', '.m4a', '.M4A')):
                 audio_files.append(f)
+   
         self.audio_playname = audio_files[self.index_player]
 
 
@@ -229,7 +254,7 @@ class Equalizer8Bands:
                     self.equalizer.stop_playback()
    
                 audio_files = []
-                for f in os.listdir('.'):
+                for f in os.listdir(self.parent.path_music):
                     if f.endswith(('.wav', '.WAV', '.mp3', '.MP3', '.flac', '.FLAC', '.m4a', '.M4A')):
                         audio_files.append(f)
 
@@ -253,7 +278,7 @@ class Equalizer8Bands:
                     self.equalizer.stop_playback()
 
                 audio_files = []
-                for f in os.listdir('.'):
+                for f in os.listdir(self.parent.path_music):
                     if f.endswith(('.wav', '.WAV', '.mp3', '.MP3', '.flac', '.FLAC', '.m4a', '.M4A')):
                         audio_files.append(f)
 
@@ -270,26 +295,29 @@ class Equalizer8Bands:
                 self.button = button
                 self.equalizer = equalizer
                 self.parent = parent
+                self.already_apply = False
 
             def on_click(self):
    
                 if not self.equalizer.running:
                     audio_files = []
-                    for f in os.listdir('.'):
+                    for f in os.listdir(self.parent.path_music):
                         if f.endswith(('.wav', '.WAV', '.mp3', '.MP3', '.flac', '.FLAC', '.m4a', '.M4A')):
                             audio_files.append(f)
 
-                    self.equalizer.reset(audio_files[self.parent.index_player])
+                    self.equalizer.reset(self.parent.path_music + "\\" + audio_files[self.parent.index_player])
+                    
+                    for idx, slv in enumerate(self.parent.sliderV):
+                        self.equalizer.set_gain(idx, slv.value)
+
+                    self.equalizer.volume = self.parent.sliderSound.value / 100.0
+                    print(self.equalizer.volume)
+                    self.already_apply = True
+
                     self.equalizer.start_playback()
-
-                    #for idx, slv in enumerate(self.parent.sliderV):
-                    #    self.equalizer.set_gain(idx, slv.value)
-
-                    #self.equalizer.volume = -self.parent.sliderSound.value / 100.0
-                    #print(self.equalizer.volume)
-
                 else:
                     self.equalizer.paused = False
+                    self.already_apply =False
 
         self.buttonPlayEvent = EventButtonPlay(self.play, equalizer, self)
 
@@ -317,6 +345,27 @@ class Equalizer8Bands:
 
         self.buttonStopEvent = EventButtonStop(self.stop, equalizer)
 
+        class EventButtonReset:
+
+            def __init__(self, button, equalizer, parent):
+                self.button = button
+                self.equalizer = equalizer
+                self.parent = parent
+
+            def on_click(self):
+                for idx, slv in enumerate(self.parent.sliderV):
+                    slv.set_value(0)
+
+                self.parent.sliderSound.set_value(50)
+
+                for idx, slv in enumerate(self.parent.sliderV):
+                    self.equalizer.set_gain(idx, slv.value)
+
+                self.equalizer.volume = self.parent.sliderSound.value / 100.0
+                print(self.equalizer.volume)
+
+        self.buttonResetEvent = EventButtonReset(self.reset, equalizer, self)
+
 
         self.sliderSound = SliderV(window, baseX-90, baseY, "sliderSound", 0, 100)
 
@@ -327,8 +376,8 @@ class Equalizer8Bands:
               
 
             def on_move(self):
-                print(self.sliderV.name, -self.sliderV.value)
-                self.equalizer.volume = -self.sliderV.value / 100.0
+                print(self.sliderV.name, self.sliderV.value)
+                self.equalizer.volume = self.sliderV.value / 100.0
                 #print(self.equalizer.volume)
 
         self.sliderSoundEvent = Event_SliderSound(self.sliderSound, self.equalizer)
@@ -351,6 +400,48 @@ class Equalizer8Bands:
         #for oe in self.outputEqV:
         #    oe.SetValueOutput(random.randint(-60,60))
 
+        self.basePrefBout = baseY + self.baseYoutputEq 
+
+        self.width_button_pref = 75
+        self.margin_button_pref = 10
+        self.pref1 = Button(window, baseX-90, self.basePrefBout, width=self.width_button_pref, height=20, name="ButtonPref1", value="Pref1")
+
+        class EventButtonPref1:
+
+            def __init__(self, button, equalizer, parent):
+                self.button = button
+                self.equalizer = equalizer
+                self.parent = parent
+
+            def on_click(self):
+                                
+                prefs = Manager("prefs.ini")
+                prefs.afficher()
+
+                gain = [prefs.gain62,
+                        prefs.gain125,
+                        prefs.gain250,
+                        prefs.gain500,
+                        prefs.gain1k,
+                        prefs.gain2k,
+                        prefs.gain4k,
+                        prefs.gain8k]
+
+                for idx, slv in enumerate(self.parent.sliderV):
+                    slv.set_value(gain[idx])
+
+                self.parent.sliderSound.set_value(prefs.sound_vol)
+
+                for idx, slv in enumerate(self.parent.sliderV):
+                    self.equalizer.set_gain(idx, slv.value)
+
+                self.equalizer.volume = self.parent.sliderSound.value / 100.0
+                print(self.equalizer.volume)
+
+        self.buttonPref1Event = EventButtonPref1(self.pref1, equalizer, self)
+
+
+        
 
         class Event_SliderV:
             def __init__(self, sliderV, outputEq, equalizer, idx=0):
@@ -388,6 +479,7 @@ class Equalizer8Bands:
         self.pause.draw()
         self.stop.draw()
         self.next.draw()
+        self.reset.draw()
 
         for sl in self.sliderV:
             sl.draw()
@@ -401,7 +493,7 @@ class Equalizer8Bands:
             
         self.display_text('Play now ' + self.audio_playname, self.baseX-90, self.baseY-90)
 
-        self.display_text(str(-int(self.sliderSound.value)), self.baseX-90, self.baseY-20)
+        self.display_text(str(int(self.sliderSound.value)), self.baseX-90, self.baseY-20)
         self.display_text('Sound', self.baseX-90, self.baseY+self.sliderV[0].h+20)
 
         self.display_text('+30db', self.baseX+390, self.baseY+10, 14)
@@ -421,6 +513,8 @@ class Equalizer8Bands:
         self.display_text('4Khz', self.baseX+300, self.baseY+self.sliderV[0].h+20)
         self.display_text('8Khz', self.baseX+350, self.baseY+self.sliderV[0].h+20)
 
+        self.pref1.draw()
+
     def Event(self, event):
 
         for ix, sl in enumerate(self.sliderV):
@@ -433,3 +527,6 @@ class Equalizer8Bands:
         self.pause.Event(event, self.buttonPauseEvent)
         self.stop.Event(event, self.buttonStopEvent)
         self.next.Event(event, self.buttonNextEvent)
+        self.reset.Event(event, self.buttonResetEvent)
+
+        self.pref1.Event(event, self.buttonPref1Event)

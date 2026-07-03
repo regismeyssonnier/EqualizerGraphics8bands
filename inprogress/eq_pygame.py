@@ -14,16 +14,23 @@ from scipy.io import wavfile
 
 from ui import *
 from eq import *
+from manager import *
 
 COULEUR_FOND = (30, 30, 30)
 
-
+manager = Manager("config.ini")
+manager.afficher()
 
 # Initialisation de Pygame
 pygame.init()
 
 # Constantes
 LARGEUR, HAUTEUR = 800, 600
+if hasattr(manager, 'width'):
+    LARGEUR = manager.width
+if hasattr(manager, 'height'):
+    HAUTEUR = manager.height
+
 
 # Création de la fenêtre
 fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR))
@@ -33,7 +40,7 @@ horloge = pygame.time.Clock()
 eq = EqualizerAudio('fast.mp3')
 eq.start_playback()
 
-equalizer8Bands = Equalizer8Bands(fenetre, 100, 100, eq)
+equalizer8Bands = Equalizer8Bands(fenetre, 100, 100, eq, manager=manager)
 
 
 
