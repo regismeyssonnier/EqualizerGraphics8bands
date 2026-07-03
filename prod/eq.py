@@ -59,6 +59,56 @@ class EqualizerAudio:
         # Filtres pour l'égalisation en temps réel
         self.filters = self.create_filters()
         
+    def reset(self, file_path, sample_rate=44100):
+        self.file_path = file_path
+        self.sample_rate = sample_rate
+        self.smooth_factor = 0.5
+        
+        # Les 8 bandes
+        self.band_centers = np.array([62, 125, 250, 500, 1000, 2000, 4000, 8000])
+        self.band_labels = ['62', '125', '250', '500', '1k', '2k', '4k', '8k']
+        self.n_bands = len(self.band_centers)
+        self.gains = np.zeros(self.n_bands)
+
+        # Paramètres de réverbération
+        self.reverb_amount = 0.0  # 0.0 à 1.0
+        self.reverb_type = 'room'  # 'room', 'hall', 'cathedral'
+        self.reverb_damping = 0.5  # 0.0 à 1.0
+        
+        # Chargement du fichier
+        self.audio_data, self.sample_rate_original = self.load_audio(file_path)
+        print(f"✅ Fichier chargé : {file_path}")
+        print(f"   Durée : {len(self.audio_data) / self.sample_rate_original:.2f} secondes")
+        print(f"   Fréquence d'échantillonnage : {self.sample_rate_original} Hz")
+        
+        # Si stéréo, on prend le premier canal
+        if len(self.audio_data.shape) > 1:
+            self.audio_data_mono = self.audio_data[:, 0]
+        else:
+            self.audio_data_mono = self.audio_data
+        
+        # Normalisation
+        max_val = np.max(np.abs(self.audio_data_mono))
+        if max_val > 0:
+            self.audio_data_mono = self.audio_data_mono / max_val * 0.95
+        print(f"   Niveau max du signal : {20 * np.log10(max_val + 1e-12):.1f} dB")
+        
+        # Paramètres d'analyse
+        self.buffer_size = 4096
+        self.hop_size = 2048
+        self.position = 0
+        self.running = False
+        self.paused = False
+        self.smoothed_amplitudes = np.zeros(self.n_bands)
+        self.lock = Lock()
+        
+        # Pour la lecture audio
+        self.stream = None
+        self.volume = 0.8
+        
+        # Filtres pour l'égalisation en temps réel
+        self.filters = self.create_filters()
+
     def create_filters(self):
         """Crée des filtres passe-bande pour chaque fréquence"""
         filters = []
