@@ -216,14 +216,14 @@ class Equalizer8Bands:
 
         
         self.sliderV = []
-        self.sliderV.append(SliderV(window, baseX, baseY, "slider62"))
-        self.sliderV.append(SliderV(window, baseX+50, baseY, "slider125"))
-        self.sliderV.append(SliderV(window, baseX+100, baseY, "slider250"))
-        self.sliderV.append(SliderV(window, baseX+150, baseY, "slider500"))
-        self.sliderV.append(SliderV(window, baseX+200, baseY, "slider1k"))
-        self.sliderV.append(SliderV(window, baseX+250, baseY, "slider2k"))
-        self.sliderV.append(SliderV(window, baseX+300, baseY, "slider4k"))
-        self.sliderV.append(SliderV(window, baseX+350, baseY, "slider8k"))
+        self.sliderV.append(SliderV(window, baseX, baseY, "slider62", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+50, baseY, "slider125", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+100, baseY, "slider250", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+150, baseY, "slider500", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+200, baseY, "slider1k", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+250, baseY, "slider2k", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+300, baseY, "slider4k", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+350, baseY, "slider8k", valMin=-30, valMax=30))
 
         self.path_music = '.'
         self.index_player = 0
