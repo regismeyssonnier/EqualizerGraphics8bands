@@ -11,5 +11,6 @@ To run, execute **./eq_pygame** and change in the code the name of the song you 
 
 To install ffmpeg, download **ffmpeg-release-full.7z** on https://www.gyan.dev/ffmpeg/builds/, and unzip in C: directory and after that add "c:/ffmpeg/bin" to path.
 
-<img width="802" height="832" alt="equal2" src="https://github.com/user-attachments/assets/236540ac-8364-450c-9419-a7db9a9ba489" />
+<img width="802" height="832" alt="Capture d&#39;écran 2026-07-04 184253" src="https://github.com/user-attachments/assets/3d20c293-e506-43f8-8611-17025efde238" />
+
 
