@@ -5,7 +5,7 @@ Equalizer graphics
 
 -**inprogress** folder are work in progress (may be the same as prod)
 
-To run, execute **./eq_pygame** and change in the code the name of the song you want to listen.
+To run, execute **./eq_pygame**.
 
 -before install the library python needed and ffmpeg for mp3 file reading.
 
