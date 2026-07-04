@@ -5,6 +5,7 @@ import random
 import os
 
 from eq import *
+from manager import *
 
 #Color
 COLOR_RED = (255, 0, 0)
@@ -215,14 +216,14 @@ class Equalizer8Bands:
 
         
         self.sliderV = []
-        self.sliderV.append(SliderV(window, baseX, baseY, "slider62"))
-        self.sliderV.append(SliderV(window, baseX+50, baseY, "slider125"))
-        self.sliderV.append(SliderV(window, baseX+100, baseY, "slider250"))
-        self.sliderV.append(SliderV(window, baseX+150, baseY, "slider500"))
-        self.sliderV.append(SliderV(window, baseX+200, baseY, "slider1k"))
-        self.sliderV.append(SliderV(window, baseX+250, baseY, "slider2k"))
-        self.sliderV.append(SliderV(window, baseX+300, baseY, "slider4k"))
-        self.sliderV.append(SliderV(window, baseX+350, baseY, "slider8k"))
+        self.sliderV.append(SliderV(window, baseX, baseY, "slider62", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+50, baseY, "slider125", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+100, baseY, "slider250", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+150, baseY, "slider500", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+200, baseY, "slider1k", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+250, baseY, "slider2k", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+300, baseY, "slider4k", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+350, baseY, "slider8k", valMin=-30, valMax=30))
 
         self.path_music = '.'
         self.index_player = 0
@@ -236,6 +237,7 @@ class Equalizer8Bands:
         for f in os.listdir(self.path_music):
             if f.endswith(('.wav', '.WAV', '.mp3', '.MP3', '.flac', '.FLAC', '.m4a', '.M4A')):
                 audio_files.append(f)
+   
         self.audio_playname = audio_files[self.index_player]
 
 
@@ -303,7 +305,7 @@ class Equalizer8Bands:
                         if f.endswith(('.wav', '.WAV', '.mp3', '.MP3', '.flac', '.FLAC', '.m4a', '.M4A')):
                             audio_files.append(f)
 
-                    self.equalizer.reset(audio_files[self.parent.index_player])
+                    self.equalizer.reset(self.parent.path_music + "\\" + audio_files[self.parent.index_player])
                     
                     for idx, slv in enumerate(self.parent.sliderV):
                         self.equalizer.set_gain(idx, slv.value)
@@ -398,6 +400,48 @@ class Equalizer8Bands:
         #for oe in self.outputEqV:
         #    oe.SetValueOutput(random.randint(-60,60))
 
+        self.basePrefBout = baseY + self.baseYoutputEq 
+
+        self.width_button_pref = 75
+        self.margin_button_pref = 10
+        self.pref1 = Button(window, baseX-90, self.basePrefBout, width=self.width_button_pref, height=20, name="ButtonPref1", value="Pref1")
+
+        class EventButtonPref1:
+
+            def __init__(self, button, equalizer, parent):
+                self.button = button
+                self.equalizer = equalizer
+                self.parent = parent
+
+            def on_click(self):
+                                
+                prefs = Manager("prefs.ini")
+                prefs.afficher()
+
+                gain = [prefs.gain62,
+                        prefs.gain125,
+                        prefs.gain250,
+                        prefs.gain500,
+                        prefs.gain1k,
+                        prefs.gain2k,
+                        prefs.gain4k,
+                        prefs.gain8k]
+
+                for idx, slv in enumerate(self.parent.sliderV):
+                    slv.set_value(gain[idx])
+
+                self.parent.sliderSound.set_value(prefs.sound_vol)
+
+                for idx, slv in enumerate(self.parent.sliderV):
+                    self.equalizer.set_gain(idx, slv.value)
+
+                self.equalizer.volume = self.parent.sliderSound.value / 100.0
+                print(self.equalizer.volume)
+
+        self.buttonPref1Event = EventButtonPref1(self.pref1, equalizer, self)
+
+
+        
 
         class Event_SliderV:
             def __init__(self, sliderV, outputEq, equalizer, idx=0):
@@ -469,6 +513,8 @@ class Equalizer8Bands:
         self.display_text('4Khz', self.baseX+300, self.baseY+self.sliderV[0].h+20)
         self.display_text('8Khz', self.baseX+350, self.baseY+self.sliderV[0].h+20)
 
+        self.pref1.draw()
+
     def Event(self, event):
 
         for ix, sl in enumerate(self.sliderV):
@@ -482,3 +528,5 @@ class Equalizer8Bands:
         self.stop.Event(event, self.buttonStopEvent)
         self.next.Event(event, self.buttonNextEvent)
         self.reset.Event(event, self.buttonResetEvent)
+
+        self.pref1.Event(event, self.buttonPref1Event)
