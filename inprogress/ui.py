@@ -36,7 +36,7 @@ class SliderV:
         self.butt_offset_x = 0
         self.butt_offset_y = self.startY + self.h // 2
         self.window = window
-        self.value = (self.valMax + self.valMin) // 2 - self.valMin
+        self.value = (self.valMax + self.valMin) // 2
                 
     
     def is_on_butt(self, mouse_x, mouse_y):
@@ -80,6 +80,10 @@ class SliderV:
                     self.butt_pushed = True
                     self.butt_offset_x = souris_x - self.x_butt
                     self.butt_offset_y = souris_y - self.y_butt
+                    if object_event is not None:
+                        if hasattr(object_event, 'on_start_move'):
+                            object_event.on_start_move()
+
                 else:
                     self.butt_pushed = False
         
@@ -89,6 +93,9 @@ class SliderV:
                 if self.butt_pushed:  # Seulement si on avait cliqué dessus
                     # Réinitialisation des états
                     self.butt_pushed = False
+                    if object_event is not None:
+                        if hasattr(object_event, 'on_end_move'):
+                            object_event.on_end_move()
 
         if event.type == pygame.MOUSEMOTION:
             if self.butt_pushed:
@@ -167,6 +174,7 @@ class Button:
         self.w = width
         self.h = height
         self.value = value
+        self.butt_pushed = False
 
 
     def is_on_butt(self, mouse_x, mouse_y):
@@ -187,14 +195,22 @@ class Button:
         return texte_surface.get_rect(topleft=(x, y))
 
     def Event(self, event, object_event):
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Bouton gauche
+                souris_x, souris_y = event.pos
+                if self.is_on_butt(souris_x, souris_y):
+                    self.butt_pushed = True
         
         # Détection du relâchement (mousebuttonup)
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # Bouton gauche
                 souris_x, souris_y = event.pos
-                if self.is_on_butt(souris_x, souris_y):
+                if self.is_on_butt(souris_x, souris_y) and self.butt_pushed:
                     if object_event is not None:
                         object_event.on_click()
+
+                self.butt_pushed = False
 
 class Equalizer8Bands:
 
@@ -224,6 +240,8 @@ class Equalizer8Bands:
         self.sliderV.append(SliderV(window, baseX+250, baseY, "slider2k", valMin=-30, valMax=30))
         self.sliderV.append(SliderV(window, baseX+300, baseY, "slider4k", valMin=-30, valMax=30))
         self.sliderV.append(SliderV(window, baseX+350, baseY, "slider8k", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+440, baseY, "sliderAll", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+490, baseY, "sliderVoice", valMin=-30, valMax=30))
 
         self.path_music = '.'
         self.index_player = 0
@@ -308,6 +326,7 @@ class Equalizer8Bands:
                     self.equalizer.reset(self.parent.path_music + "\\" + audio_files[self.parent.index_player])
                     
                     for idx, slv in enumerate(self.parent.sliderV):
+                        if idx > 7:continue
                         self.equalizer.set_gain(idx, slv.value)
 
                     self.equalizer.volume = self.parent.sliderSound.value / 100.0
@@ -359,6 +378,7 @@ class Equalizer8Bands:
                 self.parent.sliderSound.set_value(50)
 
                 for idx, slv in enumerate(self.parent.sliderV):
+                    if idx > 7:continue
                     self.equalizer.set_gain(idx, slv.value)
 
                 self.equalizer.volume = self.parent.sliderSound.value / 100.0
@@ -428,11 +448,13 @@ class Equalizer8Bands:
                         prefs.gain8k]
 
                 for idx, slv in enumerate(self.parent.sliderV):
+                    if idx > 7:continue
                     slv.set_value(gain[idx])
 
                 self.parent.sliderSound.set_value(prefs.sound_vol)
 
                 for idx, slv in enumerate(self.parent.sliderV):
+                    if idx > 7:continue
                     self.equalizer.set_gain(idx, slv.value)
 
                 self.equalizer.volume = self.parent.sliderSound.value / 100.0
@@ -453,6 +475,30 @@ class Equalizer8Bands:
             def on_move(self):
                 print(self.sliderV.name, self.sliderV.value)
                 self.equalizer.set_gain(self.idx, self.sliderV.value)
+
+
+        class Event_SliderVAll:
+            def __init__(self, sliderV, equalizer, sliderVi):
+                self.sliderV = sliderV
+                self.equalizer = equalizer
+                self.sliderVi = sliderVi
+                self.sound_orig = []
+                
+            def on_start_move(self):
+                self.sound_orig = []
+                for  idx, slv in enumerate(self.sliderVi):
+                    self.sound_orig.append(slv.value)
+
+            def on_end_move(self):
+                self.sliderV.set_value(0)
+      
+            def on_move(self):
+                
+                print(self.sliderV.name, self.sliderV.value)
+                for  idx, slv in enumerate(self.sliderVi):
+                    value = np.clip(self.sliderV.value + self.sound_orig[idx], slv.valMin, slv.valMax)
+                    self.equalizer.set_gain(idx, value)
+                    slv.set_value(value)
                 
 
         self.sliderEvent = []
@@ -464,6 +510,8 @@ class Equalizer8Bands:
         self.sliderEvent.append(Event_SliderV(self.sliderV[5], self.outputEqV[5], equalizer, 5))
         self.sliderEvent.append(Event_SliderV(self.sliderV[6], self.outputEqV[6], equalizer, 6))
         self.sliderEvent.append(Event_SliderV(self.sliderV[7], self.outputEqV[7], equalizer, 7))
+        self.sliderEvent.append(Event_SliderVAll(self.sliderV[8], equalizer, self.sliderV[0:8]))
+        self.sliderEvent.append(Event_SliderVAll(self.sliderV[9], equalizer, self.sliderV[2:6]))
 
     def display_text(self, texte, x, y, taille=20, couleur=(255,255,255), police=None):
         """Affiche du texte sur une surface"""
@@ -512,6 +560,8 @@ class Equalizer8Bands:
         self.display_text('2Khz', self.baseX+250, self.baseY+self.sliderV[0].h+20)
         self.display_text('4Khz', self.baseX+300, self.baseY+self.sliderV[0].h+20)
         self.display_text('8Khz', self.baseX+350, self.baseY+self.sliderV[0].h+20)
+        self.display_text('All', self.baseX+440, self.baseY+self.sliderV[0].h+20)
+        self.display_text('Voice', self.baseX+490, self.baseY+self.sliderV[0].h+20)
 
         self.pref1.draw()
 
