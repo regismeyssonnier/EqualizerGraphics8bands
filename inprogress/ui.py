@@ -27,8 +27,8 @@ class SliderV:
         self.valMin = valMin
         self.valMax = valMax
 
-        self.butt_w = 20 + self.margin
-        self.butt_h = 20
+        self.butt_w = 15 + self.margin
+        self.butt_h = 55
         self.x_butt = self.x - self.butt_w // 2 + self.w // 2
         self.y_butt = self.startY + self.h // 2
 
@@ -37,19 +37,30 @@ class SliderV:
         self.butt_offset_y = self.startY + self.h // 2
         self.window = window
         self.value = (self.valMax + self.valMin) // 2
+
+        self.display = 'image'
+        self.image = None
+        if self.display == 'image':
+            self.image = pygame.image.load("img/fader.png").convert_alpha()
+            self.image = pygame.transform.scale(self.image, (self.butt_w, self.butt_h))
+
                 
     
     def is_on_butt(self, mouse_x, mouse_y):
         """Vérifie si les coordonnées de la souris sont sur le carré"""
         return (self.x_butt <= mouse_x <= self.x_butt + self.butt_w and
-                self.y_butt <= mouse_y <= self.y_butt + self.butt_h)
+                self.y_butt-self.butt_h//2 <= mouse_y <= self.y_butt + self.butt_h//2)
 
     def draw(self):
 
         pygame.draw.rect(self.window, COLOR_BLV, (self.x, self.y, self.w, self.h))
 
-        pygame.draw.rect(self.window, COLOR_RED, (self.x_butt, self.y_butt, self.butt_w, self.butt_h))
-
+        if self.display == "draw":
+            pygame.draw.rect(self.window, COLOR_RED, (self.x_butt, self.y_butt, self.butt_w, self.butt_h))
+        elif self.display == "image":
+            rect_image = self.image.get_rect()
+            rect_image.center = (self.x_butt + self.butt_w // 2, self.y_butt)
+            self.window.blit(self.image, rect_image)
         
     def set_value(self, v):
         """
@@ -109,7 +120,7 @@ class SliderV:
 
 class OutputEqualizer:
 
-    def __init__(self, window, baseX, baseY, name = "OutputEq", valMin=-60, valMax=60):
+    def __init__(self, window, baseX, baseY, name = "OutputEq", valMin=-60, valMax=60, disp='A'):
 
         self.name = name
         self.margin = 10
@@ -125,8 +136,13 @@ class OutputEqualizer:
         self.window = window
         self.value = 0
 
+        self.disp = 'A'
+
     def SetValueOutput(self, v):
         self.value = np.clip(v, self.valMin, self.valMax)
+
+    def SetDisp(self, d):
+        self.disp = d
                         
 
     def draw(self):
@@ -154,11 +170,16 @@ class OutputEqualizer:
         else:
             color = (0, 51, 102)       # #003366 - Bleu foncé
 
-        if self.value <= 0:
-            pygame.draw.rect(self.window, color, (self.x, self.y+self.h//2, self.w, abs(self.value) / (self.valMax - self.valMin) * self.h))
-        else:
-            heightvalue = abs(self.value) / (self.valMax - self.valMin) * self.h
-            pygame.draw.rect(self.window, color, (self.x, self.y+self.h//2-heightvalue, self.w, heightvalue))
+        if self.disp == 'A':
+            if self.value <= 0:
+                pygame.draw.rect(self.window, color, (self.x, self.y+self.h//2, self.w, abs(self.value) / (self.valMax - self.valMin) * self.h))
+            else:
+                heightvalue = abs(self.value) / (self.valMax - self.valMin) * self.h
+                pygame.draw.rect(self.window, color, (self.x, self.y+self.h//2-heightvalue, self.w, heightvalue))
+        elif self.disp == 'B':
+           heightvalue = self.value / (self.valMax - self.valMin) * self.h
+           heightvalue += self.h // 2
+           pygame.draw.rect(self.window, color, (self.x, self.y+self.h-heightvalue, self.w, heightvalue))
 
 
 class Button:
@@ -463,7 +484,44 @@ class Equalizer8Bands:
         self.buttonPref1Event = EventButtonPref1(self.pref1, equalizer, self)
 
 
-        
+        self.dispA = Button(window, baseX+440, self.basePrefBout, width=self.width_button_pref, height=20, name="ButtonDispA", value="DispA")
+        self.dispB = Button(window, baseX+440, self.basePrefBout+20+self.margin_button_pref, width=self.width_button_pref, height=20, name="ButtonDispB", value="DispB")
+
+        class EventButtonDispA:
+
+            def __init__(self, button, output):
+                self.button = button
+                self.output = output
+
+            def on_click(self):
+                for o in self.output:
+                    o.SetDisp('A')
+
+        self.buttonDispAEvent = EventButtonDispA(self.dispA, self.outputEqV)
+
+        class EventButtonDispB:
+
+            def __init__(self, button, output):
+                self.button = button
+                self.output = output
+
+            def on_click(self):
+                for o in self.output:
+                    o.SetDisp('B')
+
+        self.buttonDispBEvent = EventButtonDispB(self.dispB, self.outputEqV)
+
+        class EventButtonStop:
+
+            def __init__(self, button, equalizer):
+                self.button = button
+                self.equalizer = equalizer
+
+            def on_click(self):
+                if self.equalizer.running:
+                    self.equalizer.stop_playback()
+
+        self.buttonStopEvent = EventButtonStop(self.stop, equalizer)
 
         class Event_SliderV:
             def __init__(self, sliderV, outputEq, equalizer, idx=0):
@@ -564,6 +622,8 @@ class Equalizer8Bands:
         self.display_text('Voice', self.baseX+490, self.baseY+self.sliderV[0].h+20)
 
         self.pref1.draw()
+        self.dispA.draw()
+        self.dispB.draw()
 
     def Event(self, event):
 
@@ -580,3 +640,5 @@ class Equalizer8Bands:
         self.reset.Event(event, self.buttonResetEvent)
 
         self.pref1.Event(event, self.buttonPref1Event)
+        self.dispA.Event(event, self.buttonDispAEvent)
+        self.dispB.Event(event, self.buttonDispBEvent)
