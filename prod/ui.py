@@ -242,6 +242,14 @@ class Equalizer8Bands:
         self.baseX = baseX
         self.baseY = baseY
 
+        
+        self.display = 'image'
+        self.back_image = None
+
+        if manager is not None:
+            self.back_image = pygame.image.load("img/back.png").convert_alpha()
+            self.back_image = pygame.transform.scale(self.back_image, (manager.width, manager.height))
+
         self.width_button_player = 75
         self.margin_button_player = 10
         self.back = Button(window, baseX-90, baseY-75, width=self.width_button_player, height=20, name="ButtonBack", value="<<")
@@ -580,6 +588,9 @@ class Equalizer8Bands:
 
     def draw(self):
 
+        rect_image = self.back_image.get_rect()
+        self.window.blit(self.back_image, rect_image)
+
         self.back.draw()
         self.play.draw()
         self.pause.draw()
@@ -602,13 +613,13 @@ class Equalizer8Bands:
         self.display_text(str(int(self.sliderSound.value)), self.baseX-90, self.baseY-20)
         self.display_text('Sound', self.baseX-90, self.baseY+self.sliderV[0].h+20)
 
-        self.display_text('+30db', self.baseX+390, self.baseY+10, 14)
-        self.display_text('0db', self.baseX+390, self.baseY+10+self.sliderV[0].h//2, 14)
-        self.display_text('-30db', self.baseX+390, self.baseY+10+self.sliderV[0].h, 14)
+        self.display_text('+30db', self.baseX+390, self.baseY+10, 14, COLOR_BLV)
+        self.display_text('0db', self.baseX+390, self.baseY+10+self.sliderV[0].h//2, 14, COLOR_BLV)
+        self.display_text('-30db', self.baseX+390, self.baseY+10+self.sliderV[0].h, 14, COLOR_BLV)
 
-        self.display_text('+60db', self.baseX+390, self.baseY+self.baseYoutputEq+10, 14)
-        self.display_text('0db', self.baseX+390, self.baseY+self.baseYoutputEq+10+self.sliderV[0].h//2, 14)
-        self.display_text('-60db', self.baseX+390, self.baseY+self.baseYoutputEq+10+self.sliderV[0].h, 14)
+        self.display_text('+60db', self.baseX+390, self.baseY+self.baseYoutputEq+10, 14, COLOR_BLV)
+        self.display_text('0db', self.baseX+390, self.baseY+self.baseYoutputEq+10+self.sliderV[0].h//2, 14, COLOR_BLV)
+        self.display_text('-60db', self.baseX+390, self.baseY+self.baseYoutputEq+10+self.sliderV[0].h, 14, COLOR_BLV)
 
         self.display_text('62hz', self.baseX, self.baseY+self.sliderV[0].h+20)
         self.display_text('125hz', self.baseX+50, self.baseY+self.sliderV[0].h+20)
