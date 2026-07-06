@@ -11,7 +11,8 @@ To run, execute **./eq_pygame**.
 
 To install ffmpeg, download **ffmpeg-release-full.7z** on https://www.gyan.dev/ffmpeg/builds/, and unzip in C: directory and after that add "c:/ffmpeg/bin" to path.
 
-<img width="652" height="682" alt="Capture d&#39;écran 2026-07-06 170755" src="https://github.com/user-attachments/assets/4467101b-0b20-41bb-b592-c0739444edcc" />
+<img width="652" height="682" alt="Capture d&#39;écran 2026-07-06 171502" src="https://github.com/user-attachments/assets/62522e87-f0fa-4531-998d-dda439d7e0bd" />
+
 
 
 
