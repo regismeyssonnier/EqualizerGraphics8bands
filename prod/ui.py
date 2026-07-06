@@ -27,8 +27,8 @@ class SliderV:
         self.valMin = valMin
         self.valMax = valMax
 
-        self.butt_w = 20 + self.margin
-        self.butt_h = 20
+        self.butt_w = 15 + self.margin
+        self.butt_h = 55
         self.x_butt = self.x - self.butt_w // 2 + self.w // 2
         self.y_butt = self.startY + self.h // 2
 
@@ -36,20 +36,31 @@ class SliderV:
         self.butt_offset_x = 0
         self.butt_offset_y = self.startY + self.h // 2
         self.window = window
-        self.value = (self.valMax + self.valMin) // 2 - self.valMin
+        self.value = (self.valMax + self.valMin) // 2
+
+        self.display = 'image'
+        self.image = None
+        if self.display == 'image':
+            self.image = pygame.image.load("img/fader.png").convert_alpha()
+            self.image = pygame.transform.scale(self.image, (self.butt_w, self.butt_h))
+
                 
     
     def is_on_butt(self, mouse_x, mouse_y):
         """Vérifie si les coordonnées de la souris sont sur le carré"""
         return (self.x_butt <= mouse_x <= self.x_butt + self.butt_w and
-                self.y_butt <= mouse_y <= self.y_butt + self.butt_h)
+                self.y_butt-self.butt_h//2 <= mouse_y <= self.y_butt + self.butt_h//2)
 
     def draw(self):
 
         pygame.draw.rect(self.window, COLOR_BLV, (self.x, self.y, self.w, self.h))
 
-        pygame.draw.rect(self.window, COLOR_RED, (self.x_butt, self.y_butt, self.butt_w, self.butt_h))
-
+        if self.display == "draw":
+            pygame.draw.rect(self.window, COLOR_RED, (self.x_butt, self.y_butt, self.butt_w, self.butt_h))
+        elif self.display == "image":
+            rect_image = self.image.get_rect()
+            rect_image.center = (self.x_butt + self.butt_w // 2, self.y_butt)
+            self.window.blit(self.image, rect_image)
         
     def set_value(self, v):
         """
@@ -80,6 +91,10 @@ class SliderV:
                     self.butt_pushed = True
                     self.butt_offset_x = souris_x - self.x_butt
                     self.butt_offset_y = souris_y - self.y_butt
+                    if object_event is not None:
+                        if hasattr(object_event, 'on_start_move'):
+                            object_event.on_start_move()
+
                 else:
                     self.butt_pushed = False
         
@@ -89,6 +104,9 @@ class SliderV:
                 if self.butt_pushed:  # Seulement si on avait cliqué dessus
                     # Réinitialisation des états
                     self.butt_pushed = False
+                    if object_event is not None:
+                        if hasattr(object_event, 'on_end_move'):
+                            object_event.on_end_move()
 
         if event.type == pygame.MOUSEMOTION:
             if self.butt_pushed:
@@ -102,7 +120,7 @@ class SliderV:
 
 class OutputEqualizer:
 
-    def __init__(self, window, baseX, baseY, name = "OutputEq", valMin=-60, valMax=60):
+    def __init__(self, window, baseX, baseY, name = "OutputEq", valMin=-60, valMax=60, disp='A'):
 
         self.name = name
         self.margin = 10
@@ -118,8 +136,13 @@ class OutputEqualizer:
         self.window = window
         self.value = 0
 
+        self.disp = 'A'
+
     def SetValueOutput(self, v):
         self.value = np.clip(v, self.valMin, self.valMax)
+
+    def SetDisp(self, d):
+        self.disp = d
                         
 
     def draw(self):
@@ -147,11 +170,16 @@ class OutputEqualizer:
         else:
             color = (0, 51, 102)       # #003366 - Bleu foncé
 
-        if self.value <= 0:
-            pygame.draw.rect(self.window, color, (self.x, self.y+self.h//2, self.w, abs(self.value) / (self.valMax - self.valMin) * self.h))
-        else:
-            heightvalue = abs(self.value) / (self.valMax - self.valMin) * self.h
-            pygame.draw.rect(self.window, color, (self.x, self.y+self.h//2-heightvalue, self.w, heightvalue))
+        if self.disp == 'A':
+            if self.value <= 0:
+                pygame.draw.rect(self.window, color, (self.x, self.y+self.h//2, self.w, abs(self.value) / (self.valMax - self.valMin) * self.h))
+            else:
+                heightvalue = abs(self.value) / (self.valMax - self.valMin) * self.h
+                pygame.draw.rect(self.window, color, (self.x, self.y+self.h//2-heightvalue, self.w, heightvalue))
+        elif self.disp == 'B':
+           heightvalue = self.value / (self.valMax - self.valMin) * self.h
+           heightvalue += self.h // 2
+           pygame.draw.rect(self.window, color, (self.x, self.y+self.h-heightvalue, self.w, heightvalue))
 
 
 class Button:
@@ -167,6 +195,7 @@ class Button:
         self.w = width
         self.h = height
         self.value = value
+        self.butt_pushed = False
 
 
     def is_on_butt(self, mouse_x, mouse_y):
@@ -187,14 +216,22 @@ class Button:
         return texte_surface.get_rect(topleft=(x, y))
 
     def Event(self, event, object_event):
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Bouton gauche
+                souris_x, souris_y = event.pos
+                if self.is_on_butt(souris_x, souris_y):
+                    self.butt_pushed = True
         
         # Détection du relâchement (mousebuttonup)
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # Bouton gauche
                 souris_x, souris_y = event.pos
-                if self.is_on_butt(souris_x, souris_y):
+                if self.is_on_butt(souris_x, souris_y) and self.butt_pushed:
                     if object_event is not None:
                         object_event.on_click()
+
+                self.butt_pushed = False
 
 class Equalizer8Bands:
 
@@ -224,6 +261,8 @@ class Equalizer8Bands:
         self.sliderV.append(SliderV(window, baseX+250, baseY, "slider2k", valMin=-30, valMax=30))
         self.sliderV.append(SliderV(window, baseX+300, baseY, "slider4k", valMin=-30, valMax=30))
         self.sliderV.append(SliderV(window, baseX+350, baseY, "slider8k", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+440, baseY, "sliderAll", valMin=-30, valMax=30))
+        self.sliderV.append(SliderV(window, baseX+490, baseY, "sliderVoice", valMin=-30, valMax=30))
 
         self.path_music = '.'
         self.index_player = 0
@@ -308,6 +347,7 @@ class Equalizer8Bands:
                     self.equalizer.reset(self.parent.path_music + "\\" + audio_files[self.parent.index_player])
                     
                     for idx, slv in enumerate(self.parent.sliderV):
+                        if idx > 7:continue
                         self.equalizer.set_gain(idx, slv.value)
 
                     self.equalizer.volume = self.parent.sliderSound.value / 100.0
@@ -359,6 +399,7 @@ class Equalizer8Bands:
                 self.parent.sliderSound.set_value(50)
 
                 for idx, slv in enumerate(self.parent.sliderV):
+                    if idx > 7:continue
                     self.equalizer.set_gain(idx, slv.value)
 
                 self.equalizer.volume = self.parent.sliderSound.value / 100.0
@@ -428,11 +469,13 @@ class Equalizer8Bands:
                         prefs.gain8k]
 
                 for idx, slv in enumerate(self.parent.sliderV):
+                    if idx > 7:continue
                     slv.set_value(gain[idx])
 
                 self.parent.sliderSound.set_value(prefs.sound_vol)
 
                 for idx, slv in enumerate(self.parent.sliderV):
+                    if idx > 7:continue
                     self.equalizer.set_gain(idx, slv.value)
 
                 self.equalizer.volume = self.parent.sliderSound.value / 100.0
@@ -441,7 +484,44 @@ class Equalizer8Bands:
         self.buttonPref1Event = EventButtonPref1(self.pref1, equalizer, self)
 
 
-        
+        self.dispA = Button(window, baseX+440, self.basePrefBout, width=self.width_button_pref, height=20, name="ButtonDispA", value="DispA")
+        self.dispB = Button(window, baseX+440, self.basePrefBout+20+self.margin_button_pref, width=self.width_button_pref, height=20, name="ButtonDispB", value="DispB")
+
+        class EventButtonDispA:
+
+            def __init__(self, button, output):
+                self.button = button
+                self.output = output
+
+            def on_click(self):
+                for o in self.output:
+                    o.SetDisp('A')
+
+        self.buttonDispAEvent = EventButtonDispA(self.dispA, self.outputEqV)
+
+        class EventButtonDispB:
+
+            def __init__(self, button, output):
+                self.button = button
+                self.output = output
+
+            def on_click(self):
+                for o in self.output:
+                    o.SetDisp('B')
+
+        self.buttonDispBEvent = EventButtonDispB(self.dispB, self.outputEqV)
+
+        class EventButtonStop:
+
+            def __init__(self, button, equalizer):
+                self.button = button
+                self.equalizer = equalizer
+
+            def on_click(self):
+                if self.equalizer.running:
+                    self.equalizer.stop_playback()
+
+        self.buttonStopEvent = EventButtonStop(self.stop, equalizer)
 
         class Event_SliderV:
             def __init__(self, sliderV, outputEq, equalizer, idx=0):
@@ -453,6 +533,30 @@ class Equalizer8Bands:
             def on_move(self):
                 print(self.sliderV.name, self.sliderV.value)
                 self.equalizer.set_gain(self.idx, self.sliderV.value)
+
+
+        class Event_SliderVAll:
+            def __init__(self, sliderV, equalizer, sliderVi):
+                self.sliderV = sliderV
+                self.equalizer = equalizer
+                self.sliderVi = sliderVi
+                self.sound_orig = []
+                
+            def on_start_move(self):
+                self.sound_orig = []
+                for  idx, slv in enumerate(self.sliderVi):
+                    self.sound_orig.append(slv.value)
+
+            def on_end_move(self):
+                self.sliderV.set_value(0)
+      
+            def on_move(self):
+                
+                print(self.sliderV.name, self.sliderV.value)
+                for  idx, slv in enumerate(self.sliderVi):
+                    value = np.clip(self.sliderV.value + self.sound_orig[idx], slv.valMin, slv.valMax)
+                    self.equalizer.set_gain(idx, value)
+                    slv.set_value(value)
                 
 
         self.sliderEvent = []
@@ -464,6 +568,8 @@ class Equalizer8Bands:
         self.sliderEvent.append(Event_SliderV(self.sliderV[5], self.outputEqV[5], equalizer, 5))
         self.sliderEvent.append(Event_SliderV(self.sliderV[6], self.outputEqV[6], equalizer, 6))
         self.sliderEvent.append(Event_SliderV(self.sliderV[7], self.outputEqV[7], equalizer, 7))
+        self.sliderEvent.append(Event_SliderVAll(self.sliderV[8], equalizer, self.sliderV[0:8]))
+        self.sliderEvent.append(Event_SliderVAll(self.sliderV[9], equalizer, self.sliderV[2:6]))
 
     def display_text(self, texte, x, y, taille=20, couleur=(255,255,255), police=None):
         """Affiche du texte sur une surface"""
@@ -512,8 +618,12 @@ class Equalizer8Bands:
         self.display_text('2Khz', self.baseX+250, self.baseY+self.sliderV[0].h+20)
         self.display_text('4Khz', self.baseX+300, self.baseY+self.sliderV[0].h+20)
         self.display_text('8Khz', self.baseX+350, self.baseY+self.sliderV[0].h+20)
+        self.display_text('All', self.baseX+440, self.baseY+self.sliderV[0].h+20)
+        self.display_text('Voice', self.baseX+490, self.baseY+self.sliderV[0].h+20)
 
         self.pref1.draw()
+        self.dispA.draw()
+        self.dispB.draw()
 
     def Event(self, event):
 
@@ -530,3 +640,5 @@ class Equalizer8Bands:
         self.reset.Event(event, self.buttonResetEvent)
 
         self.pref1.Event(event, self.buttonPref1Event)
+        self.dispA.Event(event, self.buttonDispAEvent)
+        self.dispB.Event(event, self.buttonDispBEvent)
