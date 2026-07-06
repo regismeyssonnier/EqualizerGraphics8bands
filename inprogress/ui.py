@@ -10,6 +10,7 @@ from manager import *
 #Color
 COLOR_RED = (255, 0, 0)
 COLOR_BLV = (0, 100, 150)
+COLOR_BLVDARK = (0, 100, 250)
 COLOR_OUTPUTBASE = (100, 100, 100)
 COLOR_BUTTON = (150, 120, 0)
 
@@ -197,6 +198,12 @@ class Button:
         self.value = value
         self.butt_pushed = False
 
+        self.display = 'image'
+        self.back_image = None
+
+       
+        self.back_image = pygame.image.load("img/button.png").convert_alpha()
+        self.back_image = pygame.transform.scale(self.back_image, (width, height))
 
     def is_on_butt(self, mouse_x, mouse_y):
         """Vérifie si les coordonnées de la souris sont sur le carré"""
@@ -205,7 +212,12 @@ class Button:
 
     def draw(self):
 
-        pygame.draw.rect(self.window, COLOR_BUTTON, (self.x, self.y, self.w, self.h))
+        if self.display == 'image':
+            rect_image = (self.x, self.y, self.w, self.h)
+            self.window.blit(self.back_image, rect_image)
+        else:
+            pygame.draw.rect(self.window, COLOR_BUTTON, (self.x, self.y, self.w, self.h))
+
         self.display_text(self.value, self.x + self.w//2 - len(self.value)*5, self.y + self.h//2 - 7)
 
     def display_text(self, texte, x, y, taille=20, couleur=(255,255,255), police=None):
@@ -241,6 +253,14 @@ class Equalizer8Bands:
         self.equalizer = equalizer
         self.baseX = baseX
         self.baseY = baseY
+
+        
+        self.display = 'image'
+        self.back_image = None
+
+        if manager is not None:
+            self.back_image = pygame.image.load("img/back.png").convert_alpha()
+            self.back_image = pygame.transform.scale(self.back_image, (manager.width, manager.height))
 
         self.width_button_player = 75
         self.margin_button_player = 10
@@ -580,6 +600,9 @@ class Equalizer8Bands:
 
     def draw(self):
 
+        rect_image = self.back_image.get_rect()
+        self.window.blit(self.back_image, rect_image)
+
         self.back.draw()
         self.play.draw()
         self.pause.draw()
@@ -600,26 +623,26 @@ class Equalizer8Bands:
         self.display_text('Play now ' + self.audio_playname, self.baseX-90, self.baseY-90)
 
         self.display_text(str(int(self.sliderSound.value)), self.baseX-90, self.baseY-20)
-        self.display_text('Sound', self.baseX-90, self.baseY+self.sliderV[0].h+20)
+        self.display_text('Sound', self.baseX-90, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
 
-        self.display_text('+30db', self.baseX+390, self.baseY+10, 14)
-        self.display_text('0db', self.baseX+390, self.baseY+10+self.sliderV[0].h//2, 14)
-        self.display_text('-30db', self.baseX+390, self.baseY+10+self.sliderV[0].h, 14)
+        self.display_text('+30db', self.baseX+390, self.baseY+10, 14, COLOR_BLVDARK)
+        self.display_text('0db', self.baseX+390, self.baseY+10+self.sliderV[0].h//2, 14, COLOR_BLVDARK)
+        self.display_text('-30db', self.baseX+390, self.baseY+10+self.sliderV[0].h, 14, COLOR_BLVDARK)
 
-        self.display_text('+60db', self.baseX+390, self.baseY+self.baseYoutputEq+10, 14)
-        self.display_text('0db', self.baseX+390, self.baseY+self.baseYoutputEq+10+self.sliderV[0].h//2, 14)
-        self.display_text('-60db', self.baseX+390, self.baseY+self.baseYoutputEq+10+self.sliderV[0].h, 14)
+        self.display_text('+60db', self.baseX+390, self.baseY+self.baseYoutputEq+10, 14, COLOR_BLV)
+        self.display_text('0db', self.baseX+390, self.baseY+self.baseYoutputEq+10+self.sliderV[0].h//2, 14, COLOR_BLVDARK)
+        self.display_text('-60db', self.baseX+390, self.baseY+self.baseYoutputEq+10+self.sliderV[0].h, 14, COLOR_BLVDARK)
 
-        self.display_text('62hz', self.baseX, self.baseY+self.sliderV[0].h+20)
-        self.display_text('125hz', self.baseX+50, self.baseY+self.sliderV[0].h+20)
-        self.display_text('250hz', self.baseX+100, self.baseY+self.sliderV[0].h+20)
-        self.display_text('500hz', self.baseX+150, self.baseY+self.sliderV[0].h+20)
-        self.display_text('1Khz', self.baseX+200, self.baseY+self.sliderV[0].h+20)
-        self.display_text('2Khz', self.baseX+250, self.baseY+self.sliderV[0].h+20)
-        self.display_text('4Khz', self.baseX+300, self.baseY+self.sliderV[0].h+20)
-        self.display_text('8Khz', self.baseX+350, self.baseY+self.sliderV[0].h+20)
-        self.display_text('All', self.baseX+440, self.baseY+self.sliderV[0].h+20)
-        self.display_text('Voice', self.baseX+490, self.baseY+self.sliderV[0].h+20)
+        self.display_text('62hz', self.baseX, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
+        self.display_text('125hz', self.baseX+50, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
+        self.display_text('250hz', self.baseX+100, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
+        self.display_text('500hz', self.baseX+150, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
+        self.display_text('1Khz', self.baseX+200, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
+        self.display_text('2Khz', self.baseX+250, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
+        self.display_text('4Khz', self.baseX+300, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
+        self.display_text('8Khz', self.baseX+350, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
+        self.display_text('All', self.baseX+440, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
+        self.display_text('Voice', self.baseX+490, self.baseY+self.sliderV[0].h+20, couleur=COLOR_BLVDARK)
 
         self.pref1.draw()
         self.dispA.draw()
