@@ -26,4 +26,6 @@ In **prefs.ini** contains the preference who are the best settings for music, yo
 
 You can download your youtube video and convert to mp3 at https://yt5s.biz/
 
-It's free and 100% legal. Unite us against GAFA and for **peace in the world**.
+It's free and 100% legal. Unite us against GAFA, Argentina, Paraguay, Spain, USA, and for **peace in the world**.
+
+These people are haters. ###**Vive la FRANCE Champion du monde 2026**.
