@@ -21,3 +21,9 @@ To install ffmpeg, download **ffmpeg-release-full.7z** on https://www.gyan.dev/f
 In **config.ini** you can change the value for all the variables declared in the file.
 
 In **prefs.ini** contains the preference who are the best settings for music, you can adapt to your taste.
+
+## 3. How to get music ?
+
+You can download your youtube video and convert to mp3 at https://yt5s.biz/
+
+It's free and 100% legal.
