@@ -19,6 +19,7 @@ class EqualizerAudio:
         self.band_labels = ['62', '125', '250', '500', '1k', '2k', '4k', '8k']
         self.n_bands = len(self.band_centers)
         self.gains = np.zeros(self.n_bands)
+        self.cut = np.zeros(self.n_bands)
 
         # Paramètres de réverbération
         self.reverb_amount = 0.0  # 0.0 à 1.0
@@ -108,6 +109,9 @@ class EqualizerAudio:
         
         # Filtres pour l'égalisation en temps réel
         self.filters = self.create_filters()
+
+    def set_cut(self, idx, one=1):
+        self.cut[idx] = one
 
     def create_filters(self):
         """Crée des filtres passe-bande pour chaque fréquence"""
@@ -214,7 +218,7 @@ class EqualizerAudio:
         Applique les gains au bloc audio en temps réel
         C'est le coeur de l'égaliseur !
         """
-        if len(audio_block) == 0 or np.all(self.gains == 0):
+        if len(audio_block) == 0 or (np.all(self.gains == 0) and np.all(self.cut == 0)):
             return audio_block
         
         # FFT du bloc
@@ -230,12 +234,18 @@ class EqualizerAudio:
             
             # Trouver les fréquences dans cette bande
             mask = (freqs >= f_min) & (freqs <= f_max)
+
+            if self.gains[i] != 0 or self.cut[i] == 1:
+
+                if self.cut[i] == 0:
             
-            # Conversion dB → facteur linéaire
-            gain_factor = 10 ** (self.gains[i] / 20)
+                    # Conversion dB → facteur linéaire
+                    gain_factor = 10 ** (self.gains[i] / 20)
             
-            # Appliquer le gain
-            fft[mask] *= gain_factor
+                    # Appliquer le gain
+                    fft[mask] *= gain_factor
+                else:
+                    fft[mask] = 0.0
         
         # Retour au domaine temporel
         audio_equalized = np.fft.irfft(fft)
@@ -250,7 +260,7 @@ class EqualizerAudio:
         #audio_with_reverb = self.apply_reverb(audio_equalized)
         
         return audio_equalized
-    
+            
     def fft_to_bands(self, audio_segment):
         """Analyse le segment pour l'affichage (sans appliquer les gains)"""
         if len(audio_segment) == 0:
@@ -366,7 +376,7 @@ class EqualizerAudio:
         self.stream.start()
         print("🔊 Lecture en cours...")
         print("   🔹 Glissez les barres pour modifier le son")
-        print("   🔹 Molette souris pour le volume")
+        print("   🔹 Glissez barre sound pour le volume")
         print("   🔹 Cliquez 'Pause' pour arrêter/reprendre")
     
     def stop_playback(self):

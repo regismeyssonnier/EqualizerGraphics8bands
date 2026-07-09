@@ -421,6 +421,7 @@ class Equalizer8Bands:
                 for idx, slv in enumerate(self.parent.sliderV):
                     if idx > 7:continue
                     self.equalizer.set_gain(idx, slv.value)
+                    self.equalizer.set_cut(idx, 0.0)
 
                 self.equalizer.volume = self.parent.sliderSound.value / 100.0
                 print(self.equalizer.volume)
@@ -531,18 +532,46 @@ class Equalizer8Bands:
 
         self.buttonDispBEvent = EventButtonDispB(self.dispB, self.outputEqV)
 
-        class EventButtonStop:
 
-            def __init__(self, button, equalizer):
+        self.baseCutButton = baseY + self.baseYoutputEq + self.outputEqV[0].h + 10
+        self.cutButton = []
+        self.cutButton.append(Button(window, baseX, self.baseCutButton, width=20, height=20, name="ButtonCut62", value="C"))
+        self.cutButton.append(Button(window, baseX+50, self.baseCutButton, width=20, height=20, name="ButtonCut125", value="C"))
+        self.cutButton.append(Button(window, baseX+100, self.baseCutButton, width=20, height=20, name="ButtonCu250", value="C"))
+        self.cutButton.append(Button(window, baseX+150, self.baseCutButton, width=20, height=20, name="ButtonCut500", value="C"))
+        self.cutButton.append(Button(window, baseX+200, self.baseCutButton, width=20, height=20, name="ButtonCut1k", value="C"))
+        self.cutButton.append(Button(window, baseX+250, self.baseCutButton, width=20, height=20, name="ButtonCut2k", value="C"))
+        self.cutButton.append(Button(window, baseX+300, self.baseCutButton, width=20, height=20, name="ButtonCut4k", value="C"))
+        self.cutButton.append(Button(window, baseX+350, self.baseCutButton, width=20, height=20, name="ButtonCut8k", value="C"))
+        
+        class EventButtonCut:
+
+            def __init__(self, button, equalizer, idx, one=0):
                 self.button = button
                 self.equalizer = equalizer
+                self.idx = idx
+                self.one = one
 
             def on_click(self):
-                if self.equalizer.running:
-                    self.equalizer.stop_playback()
+                
+                if self.one == 0:
+                    self.one = 1
+                else:
+                    self.one = 0
 
-        self.buttonStopEvent = EventButtonStop(self.stop, equalizer)
+                self.equalizer.set_cut(self.idx, self.one)
 
+        self.buttonCutEvent = []
+        self.buttonCutEvent.append(EventButtonCut(self.cutButton[0], self.equalizer, 0, 0))
+        self.buttonCutEvent.append(EventButtonCut(self.cutButton[1], self.equalizer, 1, 0))
+        self.buttonCutEvent.append(EventButtonCut(self.cutButton[2], self.equalizer, 2, 0))
+        self.buttonCutEvent.append(EventButtonCut(self.cutButton[3], self.equalizer, 3, 0))
+        self.buttonCutEvent.append(EventButtonCut(self.cutButton[4], self.equalizer, 4, 0))
+        self.buttonCutEvent.append(EventButtonCut(self.cutButton[5], self.equalizer, 5, 0))
+        self.buttonCutEvent.append(EventButtonCut(self.cutButton[6], self.equalizer, 6, 0))
+        self.buttonCutEvent.append(EventButtonCut(self.cutButton[7], self.equalizer, 7, 0))
+
+        
         class Event_SliderV:
             def __init__(self, sliderV, outputEq, equalizer, idx=0):
                 self.sliderV = sliderV
@@ -615,7 +644,10 @@ class Equalizer8Bands:
 
         amp = self.equalizer.get_amplitudes()
         for idx, oe in enumerate(self.outputEqV):
-            oe.SetValueOutput(amp[idx])
+            if self.equalizer.cut[idx] == 1:
+                oe.SetValueOutput(-60)
+            else:
+                oe.SetValueOutput(amp[idx])
             oe.draw()
 
         self.sliderSound.draw()
@@ -648,6 +680,9 @@ class Equalizer8Bands:
         self.dispA.draw()
         self.dispB.draw()
 
+        for cut in self.cutButton:
+            cut.draw()
+
     def Event(self, event):
 
         for ix, sl in enumerate(self.sliderV):
@@ -665,3 +700,6 @@ class Equalizer8Bands:
         self.pref1.Event(event, self.buttonPref1Event)
         self.dispA.Event(event, self.buttonDispAEvent)
         self.dispB.Event(event, self.buttonDispBEvent)
+
+        for ix, ct in enumerate(self.cutButton):
+            ct.Event(event, self.buttonCutEvent[ix])
